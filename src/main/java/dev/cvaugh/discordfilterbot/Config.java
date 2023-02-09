@@ -1,8 +1,5 @@
 package dev.cvaugh.discordfilterbot;
 
-import java.awt.Color;
-import java.util.List;
-
 public class Config {
     public static Config instance = new Config();
 

@@ -200,11 +200,10 @@ public class DiscordListener extends ListenerAdapter {
             if(settings.notify) {
                 final String guildName = event.getGuild().getName();
                 final String w = word;
-                event.getMessage().getAuthor().openPrivateChannel().queue(channel -> {
-                    channel.sendMessage(String.format(
-                            "Your message in **%s** was removed because it contained the following text:\n`%s`",
-                            guildName, w)).queue();
-                });
+                event.getMessage().getAuthor().openPrivateChannel()
+                        .queue(channel -> channel.sendMessage(String.format(
+                                "Your message in **%s** was removed because it contained the following text:\n`%s`",
+                                guildName, w)).queue());
             }
         }
     }
