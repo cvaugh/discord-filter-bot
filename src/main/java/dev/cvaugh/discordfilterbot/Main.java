@@ -45,17 +45,26 @@ public class Main {
         jda = builder.build();
         logger.debug("Registering commands");
         jda.addEventListener(new DiscordListener());
-        jda.updateCommands().addCommands(Commands.slash("help", "Shows the bot's documentation"),
+        jda.updateCommands().addCommands(Commands.slash("help", "Shows the bot's documentation."),
                 Commands.slash("addword",
-                                "Add a string to the filter list, or a list of string separated by commas")
+                                "Add a string to the filter list, or a list of string separated by commas.")
                         .addOption(OptionType.STRING, "word",
-                                "A string, or list of strings separated by commas, to filter",
+                                "a string, or list of strings separated by commas, to filter",
                                 true), Commands.slash("removeword",
-                                "Remove a string from the filter list, or a list of strings separated by commas")
+                                "Remove a string from the filter list, or a list of strings separated by commas.")
                         .addOption(OptionType.STRING, "word",
-                                "A string, or list of strings separated by commas, to remove",
+                                "a string, or list of strings separated by commas, to remove",
                                 true), Commands.slash("listwords", "Show the filter list"),
-                Commands.slash("clearwords", "Remove all words from the filter list")).queue();
+                Commands.slash("clearwords", "Remove all words from the filter list"),
+                Commands.slash("filterstrict",
+                                "Toggle strict filtering. This may cause unintended filtering.")
+                        .addOption(OptionType.BOOLEAN, "state",
+                                "If true, filters strings even if they are part of a larger string",
+                                true),
+                Commands.slash("filternotify", "Notify users when their message is removed.")
+                        .addOption(OptionType.BOOLEAN, "state",
+                                "If true, the user will be told which word caused their message to be removed",
+                                true)).queue();
         logger.debug("Registering shutdown hook");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             logger.info("Saving guild settings");

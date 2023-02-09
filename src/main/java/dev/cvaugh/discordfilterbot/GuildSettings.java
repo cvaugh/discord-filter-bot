@@ -7,6 +7,8 @@ import java.util.List;
 public class GuildSettings {
     public long id;
     public List<String> filtered = new ArrayList<>();
+    public boolean strict = false;
+    public boolean notify = true;
 
     public void save() {
         try {
