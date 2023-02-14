@@ -7,14 +7,20 @@ A bot for filtering words or phrases from a Discord server, written with [JDA](h
 [Click here to add the bot to your server.](https://discord.com/api/oauth2/authorize?client_id=1073085068035231834&permissions=2147576832&scope=bot)
 
 ## Commands
-| Command                 | Description                                                                                                                                                 |
-|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `/addword <word>`       | Add a string (or a list of strings, separated by commas) to the filter list                                                                                 |
-| `/removeword <word>`    | Remove a string (or a list of strings, separated by commas) from the filter list                                                                            |
-| `/listwords`            | Show the contents of the filter list.                                                                                                                       |
-| `/clearwords`           | Clear the filter list.                                                                                                                                      |
-| `/filterstrict <state>` | If true, filters strings even if they are part of a larger string. This may cause [unintended filtering](https://en.wikipedia.org/wiki/Scunthorpe_problem). |
-| `/filternotify <state>` | If true, the bot will tell users which word caused their message to be removed.                                                                             |
+| Command                                 | Description                                                                                                                                                                                                                                                                             |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/addword <word>`                       | Add a string (or a list of strings, separated by commas) to the filter list                                                                                                                                                                                                             |
+| `/removeword <word>`                    | Remove a string (or a list of strings, separated by commas) from the filter list                                                                                                                                                                                                        |
+| `/listwords`                            | Show the contents of the filter list.                                                                                                                                                                                                                                                   |
+| `/clearwords`                           | Clear the filter list.                                                                                                                                                                                                                                                                  |
+| `/filtersettings [aggressive] [notify]` | If `aggressive` is true, the bot will filter strings even if they are part of a larger string. This may cause [unintended filtering](https://en.wikipedia.org/wiki/Scunthorpe_problem).<br/>If `notify` is true, the bot will tell users which word caused their message to be removed. |
+| `/filterrole <role>`                    | Only users with this role or above will be able to modify filter settings. To allow any role to modify settings, use `@everyone`.                                                                                                                                                       | 
+
+### Example
+
+Use the following command to block the word "stupid": `/addword stupid`
+
+Use the following command to block the words "idiot" and "dummy": `/addword idiot, dummy`
 
 ## Self-hosting the bot
 

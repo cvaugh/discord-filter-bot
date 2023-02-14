@@ -1,6 +1,10 @@
 package dev.cvaugh.discordfilterbot;
 
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -27,9 +31,15 @@ public class DiscordListener extends ListenerAdapter {
     }
 
     @Override
-    public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        Main.logger.debug("SlashCommandInteractionEvent: [{}, {}, {}]", event.getName(),
-                event.getGuild(), event.getUser());
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
+        if(hasPermission(event)) {
+            Main.logger.debug("SlashCommandInteractionEvent: [{}, {}, {}]", event.getName(),
+                    event.getGuild(), event.getUser());
+        } else {
+            Main.logger.debug("SlashCommandInteractionEvent: [{}, {}, {}] (blocked)",
+                    event.getName(), event.getGuild(), event.getUser());
+            return;
+        }
         if(event.getGuild() == null)
             return;
         GuildSettings settings = Guilds.get(event.getGuild().getIdLong());
@@ -152,14 +162,42 @@ public class DiscordListener extends ListenerAdapter {
             event.reply(String.format("Filter list cleared (%d entr%s removed)", size,
                     size == 1 ? "y" : "ies")).setEphemeral(true).queue();
         }
-        case "filterstrict" -> {
-            OptionMapping state = event.getOption("state");
-            if(state != null) {
-                settings.strict = state.getAsBoolean();
-                event.reply("Filtering is now set to " + (settings.strict ? "strict" : "loose"))
-                        .setEphemeral(true).queue();
+        case "filtersettings" -> {
+            OptionMapping aggressive = event.getOption("aggressive");
+            OptionMapping notify = event.getOption("notify");
+            boolean updated = false;
+            if(aggressive != null) {
+                updated = true;
+                settings.aggressive = aggressive.getAsBoolean();
+            }
+            if(notify != null) {
+                updated = true;
+                settings.notify = notify.getAsBoolean();
+            }
+            if(updated) {
+                event.reply(String.format(
+                        "Filter settings updated:\n    - **%s** filtering\n    - Users **are%s** notified",
+                        settings.aggressive ? "Aggressive" : "Loose",
+                        settings.notify ? "" : " not")).setEphemeral(true).queue();
             } else {
-                event.reply("Failed to update strictness setting").setEphemeral(true).queue();
+                event.reply("Settings were not changed (no arguments supplied)").setEphemeral(true)
+                        .queue();
+            }
+        }
+        case "filterrole" -> {
+            OptionMapping option = event.getOption("role");
+            if(option != null) {
+                Role role = option.getAsRole();
+                if(role.isPublicRole()) {
+                    settings.filterRole = 0;
+                    event.reply("Role requirement removed").setEphemeral(true).queue();
+                } else {
+                    settings.filterRole = role.getIdLong();
+                    event.reply("Role requirement updated to " + role.getAsMention())
+                            .setEphemeral(true).queue();
+                }
+            } else {
+                event.reply("Failed to update role").setEphemeral(true).queue();
             }
         }
         default -> {}
@@ -177,12 +215,18 @@ public class DiscordListener extends ListenerAdapter {
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         if(event.getAuthor().isBot() || event.getAuthor().isSystem())
             return;
+        if(event.getChannelType() == ChannelType.PRIVATE) {
+            Main.logger.info(String.format("Private message received from \"%s#%s\": \"%s\"",
+                    event.getAuthor().getName(), event.getAuthor().getDiscriminator(),
+                    event.getMessage().getContentStripped()));
+            return;
+        }
         GuildSettings settings = Guilds.get(event.getGuild().getIdLong());
         String message = event.getMessage().getContentStripped();
         String word = null;
         outer:
         for(String s : settings.filtered) {
-            if(settings.strict && message.toLowerCase().contains(s)) {
+            if(settings.aggressive && message.toLowerCase().contains(s)) {
                 word = s;
                 break;
             } else {
@@ -202,9 +246,33 @@ public class DiscordListener extends ListenerAdapter {
                 final String w = word;
                 event.getMessage().getAuthor().openPrivateChannel()
                         .queue(channel -> channel.sendMessage(String.format(
-                                "Your message in **%s** was removed because it contained the following text:\n`%s`",
+                                "Your message in **%s** was removed because it contained the following text: `%s`",
                                 guildName, w)).queue());
             }
         }
+    }
+
+    public static boolean hasPermission(SlashCommandInteractionEvent event) {
+        Guild guild = event.getGuild();
+        if(guild == null)
+            return false;
+        User user = event.getUser();
+        if(user.getIdLong() == guild.getOwnerIdLong())
+            return true;
+        GuildSettings settings = Guilds.get(guild.getIdLong());
+        if(settings.filterRole == 0)
+            return true;
+        Role required = guild.getRoleById(settings.filterRole);
+        if(required == null) {
+            settings.filterRole = 0;
+            return true;
+        }
+        Member member = guild.getMemberById(user.getIdLong());
+        if(member == null)
+            return false;
+        if(member.getRoles().get(0).getPosition() >= required.getPosition())
+            return true;
+        event.reply("You do not have permission to use this command.").setEphemeral(true).queue();
+        return false;
     }
 }

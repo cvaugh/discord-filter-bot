@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,9 +40,10 @@ public class Main {
             e.printStackTrace();
         }
         logger.debug("Building JDA instance");
-        JDABuilder builder = JDABuilder.createDefault(Config.getBotToken());
-        builder.enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
-        jda = builder.build();
+        jda = JDABuilder.createDefault(Config.getBotToken())
+                .enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
+                .setMemberCachePolicy(MemberCachePolicy.ALL)
+                .enableIntents(GatewayIntent.GUILD_MEMBERS).build();
         logger.debug("Registering commands");
         jda.addEventListener(new DiscordListener());
         jda.updateCommands().addCommands(Commands.slash("help", "Shows the bot's documentation."),
@@ -55,14 +57,15 @@ public class Main {
                                 "a string, or list of strings separated by commas, to remove",
                                 true), Commands.slash("listwords", "Show the filter list"),
                 Commands.slash("clearwords", "Remove all words from the filter list"),
-                Commands.slash("filterstrict",
-                                "Toggle strict filtering. This may cause unintended filtering.")
-                        .addOption(OptionType.BOOLEAN, "state",
+                Commands.slash("filtersettings", "Update filter settings.")
+                        .addOption(OptionType.BOOLEAN, "aggressive",
                                 "If true, filters strings even if they are part of a larger string",
-                                true),
-                Commands.slash("filternotify", "Notify users when their message is removed.")
-                        .addOption(OptionType.BOOLEAN, "state",
+                                false).addOption(OptionType.BOOLEAN, "notify",
                                 "If true, the user will be told which word caused their message to be removed",
+                                false),
+                Commands.slash("filterrole", "Set which role can modify the bot's settings")
+                        .addOption(OptionType.ROLE, "role",
+                                "Only users with this role or above will be able to modify the bot's settings",
                                 true)).queue();
         logger.debug("Registering shutdown hook");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
